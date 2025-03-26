@@ -14,8 +14,8 @@
 ### 特点：
 
 1. 大小固定且无法调整
-2. 性能较好，可以在直接对计算机内存进行操作
-3. 每个元素的大小未1字节（byte）
+2. 性能较好，可以直接对计算机内存进行操作
+3. 每个元素的大小为1字节（byte）
 
 ### 创建：
 
@@ -147,7 +147,7 @@ fs.writeFile('./座右铭.txt','love love love',{flag:'a'},err => {
 ### fs流式写入
 
 ```js
-creatWriteStreamm(path,[options])
+creatWriteStream(path,[options])
 //	path 文件路径
 //	options 选项配置
 //返回值：Object
@@ -158,7 +158,7 @@ creatWriteStreamm(path,[options])
 const fs = require('fs')
 
 //2.创建写入流对象
-const ws = fs.creatWriteStreamm('./观书有感.txt')
+const ws = fs.creatWriteStream('./观书有感.txt')
 
 //3.write
 ws.write('半亩方糖一件开\r\n')
@@ -618,7 +618,7 @@ console.log(process.argv.inclludes('--version') ? '1.0.0' : '无')
 console.log(process.cwd(),__dirname)
 
 // memoryUsage 内存信息
-console.log(process.mmemoryUsage())
+console.log(process.memoryUsage())
 {
   rss: 29396992,  //常驻集大小  物理内存的存量
   heapTotal: 5799936, // V8给分配的堆内存的总大小包括未使用的内存
