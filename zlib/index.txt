@@ -1,0 +1,2191 @@
+# 						nodejs入门
+
+### 编码注意事项：
+
+1. Node.js中不能用BOM和DOM的API，可以使用console和定时器API
+2. Node.js中的顶级对象为global，也可以用globalThis访问顶级对象
+
+## Buffer：
+
+### 定义：
+
+中文译为【缓冲区】，是一个类似于Array的对象，用于表示固定长度的字节序列，换句话说，Buffer就是一段固定长度的内存空间，用于处理二进制数据
+
+### 特点：
+
+1. 大小固定且无法调整
+2. 性能较好，可以在直接对计算机内存进行操作
+3. 每个元素的大小未1字节（byte）
+
+### 创建：
+
+1. alloc
+
+   ```js
+   let buf = Buffer.alloc(10)
+   console.log(buf)
+   ```
+
+2. allocUnsafe
+
+   ```js
+   let buf = Buffer.allocUsafe(10000)
+   console.log(buf)
+   ```
+
+3. from
+
+   ```js
+   let buf = Buffer.from('hello')
+   let buf = Buffer.from([105,108,111,118,101,121,111,117])
+   console.log(buf)
+   ```
+
+### 操作：
+
+```js
+// buffer 与字符串的转换
+let buf = Buffer.from([105,108,111,118,101,121,111,117])
+console.log(buf.toString()) //utf-8
+
+//buffer的读取
+let buf = Buffer.from('hello')
+console.log(buf[0].toString(2)) //01101000 toString为进制转换
+
+//buffer的写入
+buf[0]=95
+console.log(buf.toString()) //utf-8
+
+//溢出
+let buf = Buffer.from('hello')
+buf[0] = 361 // 舍弃高位数字 0001 0110 1001   => 0110 1001
+console.log(buf)
+
+//中文
+let buf = Buffer.from('你好')
+console.log(buf)
+```
+
+### 注意：
+
+1. 如果修改的数值超过255，则超过8位数据会被舍弃
+2. 一个utf-8的字符一般占3个字节
+
+## fs(file system):
+
+- fs模块可以实现与硬盘的交互，例如文件的创建、删除、重命名、移动，还有文件内容的写入、读取，以及文件夹的相关操作
+
+### 文件的写入：
+
+```js
+writeFile(file,data,[options],callback)
+//	file:文件名
+//	data:待写入的数据
+//	options:选项设置（可选）
+//	callback:写入回调
+//	返回值：undefined
+```
+
+```js
+//文件的写入
+
+//1.导入fs模块
+const fs = require('fs')
+
+//2.写入文件（异步）
+fs.writeFile('./座右铭.txt','三人行，必有我师焉',err => {
+    // err 写入失败：错误对象 写入成功：null
+    if(err){
+        console.log('写入失败')
+        return
+    }
+    console.log('写入成功')
+})
+```
+
+### 异步与同步：
+
+```js
+//1.导入fs模块
+const fs = require('fs')
+// 同步写入
+fs.writeFileSync('./座右铭.txt','三人行，必有我师焉',err => {
+    // err 写入失败：错误对象 写入成功：null
+    if(err){
+        console.log('写入失败')
+        return
+    }
+    console.log('写入成功')
+})
+```
+
+### fs追加写入
+
+```js
+const fs = require('fs')
+
+// 调用appendFile
+fs.appendFile('./座右铭.txt','择其善者而从之，择其不善者而改之',err => {
+    // 判断
+    if(err){
+        console.log('追加写入失败')
+        return
+    }
+    console.log('追加写入成功')
+})
+
+// writeFile 也可以实现追加写入
+fs.writeFile('./座右铭.txt','love love love',{flag:'a'},err => {
+    if(err){
+        console.log('写入失败')
+        return
+    }
+    console.log('写入成功')
+})
+```
+
+### fs流式写入
+
+```js
+creatWriteStreamm(path,[options])
+//	path 文件路径
+//	options 选项配置
+//返回值：Object
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.创建写入流对象
+const ws = fs.creatWriteStreamm('./观书有感.txt')
+
+//3.write
+ws.write('半亩方糖一件开\r\n')
+ws.write('半亩方糖一件开\r\n')
+ws.write('半亩方糖一件开\r\n')
+ws.write('半亩方糖一件开\r\n')
+
+//4.关闭通道 (可选)
+//ws.close()
+
+// 可选事件
+writeStream.on('finish',()=>{
+    console.log('写入完成')
+})
+```
+
+### 写入文件的场景
+
+下载文件、安装文件、保存程序日志，如Git、编辑器保存文件、视频录制
+
+需要持久化保存数据的时候，应该想到文件的写入
+
+### fs文件的读取
+
+异步的方式fs IO操作是由libuv完成的，完成任务之后才会推入V8的事件队列，所以会有延后
+
+计时器等普通函数都是由V8时间不变循环完成的
+
+```js
+readFile(path,[options],callback)
+//	path:文件路径
+//	options:选项配置
+//	callback:回调函数
+//返回值：undefined
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.异步读取
+fs.readFile('./观书有感.txt', (err,data) =>{
+    if(err){
+        console.log('读取失败')
+        return
+    }
+    console.log(data.toString())
+})
+
+//3.同步读取
+let data = fs.readFileSync('./观书有感.txt')
+console.log(data.toString())
+```
+
+### 读取文件应用场景
+
+电脑开机、程序运行、编辑器打开文件、查看图片、播放视频、播放音乐、Git查看日志、上传文件、查看聊天记录
+
+### fs流式读取
+
+```js
+creatReadStream(path,[options],calllback)
+//	path:文件路径
+//	options:选项配置
+//	callback:回调函数
+//返回值：undefined
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.创建读取流对象
+const rs = fs.createReadStream('../资料/笑看风云.mp4')
+
+//3.绑定data 事件 chunk 块儿
+rs.on('data',chunk => {
+    console.log(chunk.length) //65536 字节 => 64K
+    // console.log(chunk.toString()) // 乱码
+    console.log(chunk)
+})
+
+//4.end  可选事件
+rs.on('end',() => {
+     console.log('读取完成')
+})
+```
+
+### fs 复制文件
+
+```js
+// 方式一 readFile
+//1.导入fs
+const fs = require('fs')
+const process = require('process')
+//2.读取文件内容
+let data = fs.readFileSync('../资料/笑看风云.mp4')
+//3.写入文件
+fs.writeFileSync('../资料/笑看风云-2.mp4',data)
+console.log(process.memoryUsage()) //rss:整个占用内存大小
+
+//方式二 流式操作 (推荐)
+//1.创建读取流对象
+const rs = fs.createReadStream('../资料/笑看风云.mp4')
+//2.创建写入流对象
+const ws = fs.createWriteStream('../资料/笑看风云-3.mp4')
+//3.绑定data 事件
+rs.on('data',chunk => {
+    ws.write(chunk)
+})
+
+rs.on('end',() => {
+    console.log(process.memoryUsage()) 
+})
+
+// 方式三
+rs.pipe(ws)
+```
+
+### fs文件重命名与移动
+
+```js
+fs.rename(oldPath,newPath,callback)
+fs.renameSync(oldPath,newPath)
+//	oldPath:文件当前路径
+//	newPath:文件新路径
+//	callback:操作后的回调
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.调用rename 方法
+fs.rename('./座右铭.txt','./论语.txt',err => {
+    if(err){
+        console.log('操作失败')
+        return
+    }
+    console.log('操作成功')
+})
+
+// 文件移动
+fs.rename('./data.txt','../资料/data.txt',err => {
+    if(err){
+        console.log('操作失败')
+        return
+    }
+    console.log('操作成功')
+})
+```
+
+### fs文件删除
+
+```js
+fs.unlink(path,callback)
+fs.unlinkSync(path)
+//	path:文件路径
+//	callback:操作后的回调
+fs.rm(path,callback)
+fs.rmSync(path)
+//	path:文件路径
+//	callback:操作后的回调
+fs.rmSync(path,{recursive: true}) // 递归删除
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.调用 unlink 方法 
+fs.unlink('./座右铭.txt',err => {
+    if(err){
+        console.log('删除失败')
+        return
+    }
+    console.log('删除成功')
+})
+
+// 调用 rm 方法 14.4↑
+fs.rm('./座右铭.txt',err => {
+    if(err){
+        console.log('删除失败')
+        return
+    }
+    console.log('删除成功')
+})
+```
+
+```js
+const fs = require('fs')
+
+//硬链接 共享文件 备份文件
+// 原始地址  硬连接之后的地址
+fs.linkSync('index.txt','index2.txt')
+
+//软连接 需要管理员权限 类似windows的快捷方式
+fs.symlinkSync('index.txt','index3.txt')
+```
+
+### fs 文件夹操作
+
+```js
+fs.mkdir(path,[options],callback)
+fs.mkdirSync(path,[options])
+//	path:文件路径
+//	options:选项配置
+//	callback:操作后的回调
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.调用 mkdir（make directory） 方法 创建文件夹
+fs.mkdir('./html',err => {
+    if(err){
+        console.log('创建文件夹失败')
+        return
+    }
+    console.log('创建文件夹成功')
+})
+
+//2-2 递归创建
+fs.mkdir('./html/a/b/c',{recursive: true},err => {
+    if(err){
+        console.log('创建文件夹失败')
+        return
+    }
+    console.log('创建文件夹成功')
+})
+
+//2-3 读取文件夹
+fs.readdir('../资料',(err,data) => {
+    if(err){
+        console.log('读取失败')
+        return
+    }
+    console.log(data)
+})
+
+//2-4 删除文件夹
+fs.rmdir('./html',err => {
+    if(err){
+        console.log('删除失败')
+        return
+    }
+    console.log('删除成功')
+})
+
+//递归删除（不建议使用）
+fs.rmdir('./a/b',{recursive: true}, err => {
+    if(err){
+        console.log('删除失败')
+        return
+    }
+    console.log('删除成功')
+})
+//建议使用
+fs.rm('./a/b',{recursive: true}, err => {
+    if(err){
+        console.log('删除失败')
+        return
+    }
+    console.log('删除成功')
+})
+```
+
+### fs查看资源状态
+
+```js
+fs.stat(path,[options],callback)
+fs.statSync(path,[options])
+//	path:文件路径
+//	options:选项配置(可选)
+//	callback:操作后的回调
+```
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//2.stat 方法 status 缩写 状态
+fs.stat('../资料/笑看风云.mp4',(err,data) => {
+    if(err){
+        console.log('操作失败')
+        return
+    }
+    console.log(data)
+    // isFile
+    console.log(data.isFile())
+    // isDirectory
+    console.log(data.isDirectory())
+})
+```
+
+### fs监听文件变化
+
+```js
+const fs = require('fs')
+// 监听文件变化
+fs.watch(__dirname, (event, filename) => {
+  if (filename) {
+    console.log('filename provided: ' + filename)
+  } else {
+    console.log('filename not provided')
+  }
+})
+```
+
+### fs路径
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+//相对路径
+fs.writeFileSync('./index.html','love')
+fs.writeFileSync('index.html','love')
+fs.writeFileSync('../index.html','love')
+
+//绝对路径
+fs.writeFileSync('D:/index.html','love')
+fs.writeFileSync('/index.html','love')
+```
+
+### fs相对路径的Bug
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+// 相对路径参照物：命令行的工作目录
+fs.writeFileSync('./index.html','love')
+
+// 绝对路径 '全局变量'保存的是：所在文件的所在目录的绝对路径
+fs.writeFileSync(__dirname + '/index.html','love')
+```
+
+### fs批量重命名
+
+```js
+//1.导入fs
+const fs = require('fs')
+
+// 读取 code 文件夹
+const files = fs.readdirSync('./code')
+
+//遍历数组
+files.forEach(item => {
+    // 拆分文件名
+    let data = item.split('-')
+    let[num,name]= data
+    // 判断
+    if(Number(num) < 10){
+        num = '0' + num
+    }
+    // 创建新的文件名
+    let newName = num + '-' + name
+    // 重命名
+    fs.renameSync(`./code/${item}`,`./code/${newName}`)
+    console.log(newName)
+})
+```
+
+## path模块
+
+```js
+//resolve (__dirname(绝对路径)，相对路径 )
+console.log(path.resolve(__dirname,'./index.html'))
+console.log(path.resolve(__dirname,'index.html'))
+
+//sep 分隔符
+console.log(path.sep) // window \  Linux  /
+//在windows上可以使用path中的win32和posix方法转换
+path.win32.basename()
+path.posix.basename()
+
+// parse方法  __dirname '全局变量'
+console.log(__filename) // 文件的绝对路径
+let str = 'D:\\nodeJs\\13-path\\代码\\path.js'
+console.log(path.parse(str))
+
+//format 方法 还原成路径
+path.format()
+
+// 拼接路径
+path.join()
+
+// basename  快速获取文件名
+console.log(path.basename(str))
+
+// dirname 快速获取路径目录名
+console.log(path.dirname(str))
+
+// extname 快速获取扩展名
+console.log(path.extname(str))
+```
+
+## os
+
+内置模块：跟操作系统进行交互的模块
+
+```js
+const os = requir('node:os')
+
+// platform 获取操作系统平台 win32 windows darwin mac linux
+cosnole.log(os.platform())
+
+//release 获取操作系统版本号
+cosnole.log(os.release())
+cosnole.log(os.type())
+cosnole.log(os.version())
+
+// exec 可以执行shell 命令
+const { exec } = require('child_process')
+
+// 判断不同的操作系统 分别调用对应的shell 命令
+const platform = os.platform()
+
+const open = (url) => {
+  //mac
+  if (platform === 'darwin') {
+    exec(`open ${url}`)
+  } else if (platform === 'win32') {
+    exec(`start ${url}`)
+  } else {
+    exec(`xdg-open ${url}`) // linux
+  }
+}
+open('http://www.baidu.com')
+
+// 读取用户目录  原理: win %userprofile%   mac $HOME
+console.log(os.homedir())
+
+// 获取cpu架构 x64
+console.log(os.arch())
+// 操作系统线程cpu信息
+console.log(os.cpus())
+console.log(os.cpus().length)
+
+//网络信息
+console.log(os.networkInterfaces())
+```
+
+## process
+
+```js
+//os cpu 架构
+console.log(process.arch)
+console.log(process.platform)
+
+// 返回数组
+console.log(process.argv.inclludes('--version') ? '1.0.0' : '无')
+
+//cwd() 获取工作目录 __dirname esm 模式下用不了 __dirname 可以使用cwd代替
+console.log(process.cwd(),__dirname)
+
+// memoryUsage 内存信息
+console.log(process.mmemoryUsage())
+{
+  rss: 29396992,  //常驻集大小  物理内存的存量
+  heapTotal: 5799936, // V8给分配的堆内存的总大小包括未使用的内存
+  heapUsed: 4599040, // 已经使用的内存
+  external: 1619423, // 外部的内存  C C++ 使用的
+  arrayBuffers: 10515  // 二进制的总量
+}
+
+// exit
+setTimeout(()=>{
+   console.log(5)
+},5000)
+
+process.on('exit', ()=>{
+    console.log('进程退出了')
+})
+
+setTimeout(()=>{
+    process.exit()
+},2000)
+
+// kill 杀死进程
+process.kill(process.pid)
+
+// env 环境变量  获取操作系统所有的环境变量  
+//可以修改，且修改只在当前进程生效，不会影响系统环境变量
+console.log(process.env)
+```
+
+## ffmpeg
+
+开源跨平台多媒体处理工具，可以处理音频、视频和多媒体流。ffmpeg.p2hp.com/download.html
+
+`git clone https://git.ffmpeg.org/ffmpeg.gif.git ffmpeg`
+
+安装之后查看版本`ffmpeg --version`
+
+查看详细参数`ffmpeg -h`
+
+查看过滤器 `ffmpeg -filters`
+
+```js
+const { exec, execSync } = require('child_process')
+
+// 1. 基本格式转换 avi mp4 gif等
+execSync('ffmpeg -i input.mp4 output.gif', { stdio: 'inherit' })
+
+// 2.提取视频中的音频
+execSync('ffmpeg -i input.mp4 output.mp3', { stdio: 'inherit' })
+
+// 3.裁剪视频
+execSync('ffmpeg -ss 10 to 20  -i input.mp4 output.mp4', { stdio: 'inherit' })
+
+// 4.加水印
+execSync('ffmpeg -i input.mp4 -vf drawtext=text="要添加的水印":fontsize=30:x=10:y=10:fontcolor=white output.mp4', { stdio: 'inherit' })
+
+// 5.删除水印
+execSync('ffmpeg -i input.mp4 -vf delogo=w=120:h=30:x=10:y=10 output.mp4', { stdio: 'inherit' })
+
+```
+
+## pngquant
+
+用于压缩PNG图像文件的工具。Median Cut量化算法
+
+pngquant.com/
+
+`pngquant --version`
+
+```js
+import { exec } from 'child_process'
+
+// --output 压缩输出命令
+// --quality  压缩质量 0-100 数字越高质量越好，文件越大
+// --speed 压缩速度 1-11 数字越高速度越快，质量越低
+exec('pngquant a.png --speed=1 --quality=80 --output b.png')
+```
+
+
+
+## eventEmitter
+
+```js
+const eventEmitter = require('events')
+
+// 用法 跟event bus 第三方库 mitt 采用发布订阅模式
+//发布订阅模式 off on emit once
+// process的源码嫁接了eventEmitter，所以process也可以使用on emit once off,
+//并且挂载正在gloableThis上，所以可以直接使用
+
+const bus = new eventEmitter()
+// 事件的默认最大监听数量是10个
+bus.setMaxListeners(20)
+console.log(bus.getMaxListeners())
+// 订阅一个事件
+
+const fn = (a, b) => {
+  console.log(a, b)
+}
+bus.on('event', fn)
+// bus.once('event',fn)
+// bus.off('event',fn)
+
+//发布
+
+bus.emit('event', 1, 2)
+bus.emit('event', 1, 2)
+bus.emit('event', 1, 2)
+
+```
+
+## util
+
+```js
+import util from 'util'
+import { exec } from 'child_process'
+
+const execPromise = util.promisify(exec)
+
+execPromise('node -v').then((stdout) => {
+  console.log(stdout)
+}).catch(err => {
+  console.error(err)
+})
+
+/// printf %s 匹配字符的  %d 匹配数字的 
+console.log(util.format('%s---%s', 'Hello', 'world'))
+
+
+// exec('node -v', (err, stdout, stderr) => {
+//   if (err) {
+//     console.error(err)
+//     return
+//   }
+//   console.log(stdout)
+// })
+```
+
+## crypto
+
+为了提供通用的加密和哈希算法
+
+### 对称加密算法：
+
+```js
+const crypto = require('crypto')
+
+// 对称加密算法
+// 双方协商一个密钥以及iv
+// 第一个参数 algorithm 算法 aes-256-cbc
+// 第二个参数 key 密钥 32位
+// 第三个参数 iv 初始化向量 16位 保证每次加密的结果不一样 密钥串缺少位数 还可以进行补码操作
+
+let algorithm = 'aes-256-cbc'
+let key = crypto.randomBytes(32)
+let iv = Buffer.from(crypto.randomBytes(16))
+const cipher = crypto.createCipheriv(algorithm, key, iv)
+console.log(cipher.update('hello world', 'utf8', 'hex'))
+console.log(cipher.final('hex'))
+
+// 对称解密算法
+const decipher = crypto.createDecipheriv(algorithm, key, iv)
+console.log(decipher.update('c5b2f8b1e1c1f3b1f4b1', 'hex', 'utf8'))
+console.log(decipher.final('utf8'))
+```
+
+### 非对称加密算法：
+
+```js
+const crypto = require('crypto')
+// 非对称加密算法
+// 生成公钥和私钥
+// 私钥只能是管理员拥有的 不能对外公开
+// 公钥可以对外公开
+
+
+const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048, // 长度越长 加密越安全 但是效率越低 
+})
+
+// 公钥加密
+const encrypted = crypto.publicEncrypt(publicKey, buffer.from('hello world', 'utf8'))
+console.log(encrypted.toString('hex'))
+
+// 私钥解密
+const decrypted = crypto.privateDecrypt(privateKey, encrypted)
+console.log(decrypted.toString('utf8'))
+```
+
+### 哈希函数：
+
+```js
+const crypto = require('crypto')
+// 哈希函数
+// 不能被解密 单向 不可逆
+// 具有唯一性
+// 可以用md5 校验文件的一致性
+// 读取文件内容 转换成md5 上传到服务器 后端拿到文件内容 转换成md5 
+// 跟前端的md5进行比对 如果一致 说明文件没有被篡改
+// 如果不一致 说明文件被篡改了
+crypto.createHash('sha256').update('hello world').digest('hex')
+crypto.createHash('md5').update('hello world').digest('hex')
+crypto.createHash('sha1').update('hello world').digest('hex')
+```
+
+## 脚手架
+
+~~~markdown
+### 编写脚手架
+
+1.自定义命令 而不是 node 去执行我们的脚本
+```json
+"bin": {
+    "test-cli":"src/index.js"
+  },
+```
+```sh
+npm link
+```
+创建一个软连接挂载到全局
+2.-V --help creat 命令行交互工具
+3.去下载模板isTs 下载ts版本 不要 就下载js版本
+
+需要用到的依赖库:commander inquirer ora download-git-repo
+~~~
+
+```js
+#!/usr/bin/env node
+// 告诉操作系统我执行自定义命令的时候 你帮我用node去执行 这个文件
+import { program } from "commander";
+import fs from "node:fs";
+import inquirer from "inquirer";
+import { checkPath,downloadTemplate} from "./util.js";
+
+let json = fs.readFileSync('./package.json')
+json = JSON.parse(json)
+
+
+program.version(json.version)
+console.log(json.version);
+
+program.command('create <projectName>')
+.alias('c')
+.description('创建项目')
+.action((projectName) => {
+  console.log(projectName);
+  inquirer.prompt([
+    {
+      type: 'input',  //输入 input 输入 confirm 确认 list 列表 选择框 checkbox
+      name: 'projectName', //返回值的key
+      message: '请输入项目名称', //描述
+      default: projectName //默认值
+    },
+    {
+      type: 'confirm',
+      name: 'isTS',
+      message: '是否选用typescript模板',
+    }
+  ]).then(res => {
+    if (checkPath(projectName)) {
+      console.log('项目已存在');
+      return
+    }
+    if (res.isTS) {
+      downloadTemplate('ts',res.projectName)
+    } else {
+      downloadTemplate('js',res.projectName)
+    }
+  })
+})
+```
+
+```js
+import fs from "fs";
+import download from "download-git-repo";
+import ora from "ora";
+let spinner = ora("正在下载模板...");
+
+// 检查路径
+export const checkPath = (path) => {
+  if (fs.existsSync(path)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const downloadTemplate = (branch,name) => {
+  return new Promise((resolve, reject) => {
+    spinner.start();
+    download(`direct:https://gitee.com/chinafaker//vue-template.git#${branch}`, name, { clone: true }, (err) => {
+      if (err) {
+        reject(err)
+      }
+        resolve()
+      spinner.succeed('下载成功')
+    })
+  })
+}
+```
+
+## ejs(MarkDown 转 html)
+
+```markdown
+### MarkDown 转 html
+需要用的的依赖库：ejs marked browser-sync
+```
+
+```js
+const ejs = require('ejs');
+const marked = require('marked');
+const fs = require('fs');
+let browser;
+const browserSync = require('browser-sync');
+const server = () => {
+    browser = browserSync.create();
+    browser.init({
+        server: {
+            baseDir: './',
+            index: 'index.html'
+        }
+    });
+}
+const init = (callback) => {
+    const file = fs.readFileSync('README.md', 'utf-8');
+    console.log(marked.parse(file));
+    ejs.renderFile('template.ejs', 
+      {content: marked.parse(file),
+      title: "Markdown to html"
+    }, (err, data) => {
+        if(err) throw err;
+        fs.writeFileSync('index.html', data);
+        callback && callback();
+    });
+}
+fs.watchFile('README.md', (curr, prev) => {
+  if(curr.mtime !== prev.mtime) {
+    init(() => {
+      browser.reload();
+    });
+  }
+});
+init(() => {
+    server();
+});
+```
+
+```ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+</head>
+<body>
+  <%- content %>
+</body>
+</html>
+```
+
+## zlib(压缩、解压)
+
+```
+
+```
+
+
+
+## HTTP协议
+
+- Hypertext Transfer Protocol 超文本传输协议
+
+### HTTP报文 --Fiddler
+
+#### HTTP请求报文：
+
+请求行：请求方法 + URL + HTTP版本号  `GET https://www.baidu.com/ HTTP/1.1`
+
+​	请求方法：
+
+​		GET ：获取数据
+
+​		POST ：新增数据
+
+​		PUT/PATCH： 更新数据
+
+​		DELETE：删除数据
+
+​		HEAD/OPTIONS/CONNECT/TRACE：使用较少
+
+​	URL：（Uniform Resource Locator）统一资源定位符  
+
+​					协议名 + 主机名 +端口号 +路径 +查询字符串
+
+​	HTTP版本号：
+
+​			1.0 	-> 	1996
+
+​			1.1	->	1999
+
+​			2	->	2015
+
+​			3	->	2018
+
+请求头:MDN查询各键值对对应的信息
+
+请求体：JSON、字符串
+
+#### HTTP请求报文：
+
+响应行：HTTP版本号 +响应状态码 + 响应状态描述 	`HTTP/1.1	200	 OK`
+
+​	响应状态码:	+	响应状态描述：
+
+​		200:请求成功	OK
+
+​		403:禁止请求	Forbidden
+
+​		404:找不到资源	Not Found
+
+​		500:服务器内部错误	Internal Server Error
+
+​		1xx:信息响应
+
+​		2xx:成功响应
+
+​		3xx:重定向消息
+
+​		4xx:客户端错误响应
+
+​		5xx:服务端错误响应
+
+响应头：MDN查询各键值对对应的信息	（查不到可能是公司自己做的响应头）
+
+响应体：HTML、CSS、JavaScript、图片、视频、JSON
+
+### IP
+
+#### IP地址：
+
+本身是一个梳子标识，用来标志网络设备，实现设备间的通信
+
+#### IP的分类：
+
+本地回环IP地址：127.0.0.1
+
+局域网IP （私网IP）：
+
+​	192.168.0.0~192.168.255.255
+
+​	172.16.0.0~172.31.255.255
+
+​	10.0.0.0~10.255.255.255
+
+广域网IP（公网IP）：除上述外
+
+### 端口
+
+#### 定义：
+
+应用程序的数字标识，一台现代计算机有655336个端口（0~65535），一个应用程序可以使用一个或多个端口
+
+#### 作用：
+
+实现不同主机应用程序之间的通信
+
+### 创建HTTP服务
+
+```js
+//1.导入 http 模块
+const http = require('http')
+
+//2.创建服务对象
+const server = http.createServer((request,response) => {
+    response.end('Hello HTTP Server') //设置响应体
+    response.setHeader('content-type','texthtml;charset-utf-8')
+    response.end('你好')
+})
+
+//3.监听端口，启动服务
+server.listen(9000,() => {
+    console.log('服务已经启动...')
+})
+```
+
+#### 注意事项：
+
+1. 命令行`ctrl+c`停止服务
+
+2. 当服务启动后，更新代码必须重启服务才能生效
+
+3. 响应内容中文乱码的解决办法
+
+   ```js
+   response.setHeader('content-type','texthtmml;charset-utf-8')
+   ```
+
+4. 端口号被占用
+
+   ```js
+   Error:listen EADDRINUSE:address already in use :::9000
+   ```
+
+   - 关闭当前正在运行监听端口的服务
+
+   - 修改其他端口号
+
+5. HTTP协议默认端口是80。HTTPS协议的默认端口为443。
+
+   HTTP服务开发常用端口号有3000，8080，8090，9000等 
+
+   `如果端口号被其他程序占用，可以使用资源监视器找到占用端口的程序，然后使用任务管理器关闭对应的程序`
+
+### 浏览器查看HTTP报文
+
+借助浏览器控制台netWork
+
+### 提取HTTP请求报文
+
+```js
+//1.导入 http 模块
+const http = require('http')
+
+//2.创建服务对象
+const server = http.createServer((request,response) => {
+    
+    //请求头
+    //获取请求方法
+    console.log(request.method)
+    //获取请求的 url
+    console.log(request.url) // 只包含 url 中的路径与查询字符串
+    // 获取 HTTP 协议的版本号
+    console.log(request.httpVersion)
+    // 获取 HTTP 的请求头
+    console.log(request.headers)
+    console.log(request.headers.host)
+    
+    //请求体
+    //1.声明一个变量
+    let body = ''
+    //2.绑定data事件
+    request.on('data',chunk => {
+        body += chunk
+    })
+    //3.绑定 end 事件
+    request.on('end',() => {
+        console.log(body)
+        //响应
+        response.end('Hello HTTP Server')
+    })
+    
+    
+    response.end('Hello HTTP Server') //设置响应体
+    response.setHeader('content-type','texthtml;charset-utf-8')
+})
+
+//3.监听端口，启动服务
+server.listen(9000,() => {
+    console.log('服务已经启动...')
+})
+```
+
+```js
+//导入 http 模块
+const http = require('http')
+//1.导入 http 模块
+const url = require('url')
+
+//创建服务对象
+const server = http.createServer((request,response) => {
+
+    //2.解析 request.url
+    console.log(request.url)
+    let res = url.parse(request.url,true)
+    console.log(res)
+    
+    //路径
+    let pathname = res.pathname
+    console.log(pathname)
+    
+    //查询字符串
+   	let keyword = res.query.keyword
+    
+     response.end('url')
+})
+
+//3.监听端口，启动服务
+server.listen(9000,() => {
+    console.log('服务已经启动...')
+})
+```
+
+```js
+//导入 http 模块
+const http = require('http')
+
+//创建服务对象
+const server = http.createServer((request,response) => {
+    //实例化 URL 的对象
+    let url = new URL('http://www.xxx.com/search?a=100&b=200')
+    let url = new URL('/search?a=100&b=200','http:/127.0.0.1:9000')
+    let url = new URL(request.url,'http:/127.0.0.1')
+    //输出路径
+    console.log(url.pathname)
+    //输出 keyword 查询字符串
+    console.log(url.searchParams.get('keyword'))
+    
+    console.log(url)
+    response.end('url')
+})
+
+//3.监听端口，启动服务
+server.listen(9000,() => {
+    console.log('服务已经启动...')
+})
+```
+
+### 设置HTTP请求报文
+
+```js
+//导入 http 模块
+const http = require('http')
+
+//创建服务对象
+const server = http.createServer((request,response) => {
+    //1.设置响应状态码
+    response.statusCode = 200
+    //response.statusCode = 404
+    //2.响应状态描述
+    response.statusMessage = '提示词'
+    //3.响应头
+    response.setHeader('content-type','texthtml;charset-utf-8')
+    response.setHeader('Server','Node.js')
+    response.setHeader('myHeader','test')
+    response.setHeader('test',['a','b','c'])
+    //4.响应体的设置
+    response.write('love')
+    response.write('love')
+    response.write('love')
+    
+    //response.end('response') //设置响应体
+    response.end() //设置响应体
+})
+
+//监听端口，启动服务
+server.listen(9000,() => {
+    console.log('服务已经启动...')
+})
+```
+
+```js
+//导入 http 模块
+const http = require('http')
+const fs = require('fs')
+
+//创建服务对象
+const server = http.createServer((request, response) => {
+  let html = fs.readFileSync(__dirname + '/index.html')
+  response.end(html)
+})
+
+//监听端口，启动服务
+server.listen(9000, () => {
+  console.log('服务已经启动...')
+})
+```
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Hello World</h1>
+  </body>
+</html>
+```
+
+### 网页资源加载基本过程
+
+由上到下，顺序执行，发送请求
+
+### 静态资源服务
+
+```js
+//导入 http 模块
+const http = require('http')
+const fs = require('fs')
+
+//创建服务对象
+const server = http.createServer((request, response) => {
+  let { pathname } = new URL(request.url, 'http://localhost')
+  let filePath = __dirname + '/public' + pathname
+  // 读取文件
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      response.statusCode = 500
+      response.end('文件读取失败')
+      return
+    }
+    response.end(data)
+  })
+})
+
+//监听端口，启动服务
+server.listen(9000, () => {
+  console.log('服务已经启动...')
+})
+```
+
+### 静态资源目录或网站根目录
+
+```js
+//导入 http 模块
+const http = require('http')
+const fs = require('fs')
+
+//创建服务对象
+const server = http.createServer((request, response) => {
+  let { pathname } = new URL(request.url, 'http://localhost')
+  let root = __dirname + '/public'
+  let filePath = root + pathname
+  // 读取文件
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      response.setHeader('content-type','texthtml;charset=utf-8')
+      response.statusCode = 500
+      response.end('文件读取失败')
+      return
+    }
+    response.end(data)
+  })
+})
+
+//监听端口，启动服务
+server.listen(9000, () => {
+  console.log('服务已经启动...')
+})
+```
+
+> VSCode中的HTML使用live sever 打开的网页根目录为当前文件所在的文件夹
+
+### 网页中的URL -绝对路径
+
+#### 绝对路径：
+
+- https:/baidu.com   直接执行目标找资源发送请求
+
+- //jd.com    根据当前页面的协议拼接成完整的url再发送请求
+
+- /search    根据当前页面的协议、主机名、端口拼接成完整的url再发送请求
+
+#### 相对路径：
+
+- ./css
+
+- js/app.js
+
+- ../img
+
+- ../..img
+
+### 设置资源类型（mime类型）
+
+```js
+html:'text/html'
+css:'text/css'
+js:'text/javascript'
+png:'image/png'
+jpg：'image/jpeg'
+gif:'image/gif'
+mp4:'video/mp4'
+mp3:'audio/mpeg'
+json:'application/json'
+```
+
+> 对于未知资源类型，可以选择`application/octet-stream` 类型，浏览器在遇到该类型的响应时，会对响应体内容进行独立存储，也就是我们常见的下载效果
+
+```js
+//导入 http 模块
+const http = require('http')
+const fs = require('fs')
+const path = require('path')
+
+//创建服务对象
+const server = http.createServer((request, response) => {
+    
+  // 完善错误处理
+  if(request.method !== 'GET'){
+      response.statusCode = 405
+      response.end('<h1>405 Method Not Allowed</h1>')
+  }
+  let { pathname } = new URL(request.url, 'http://localhost')
+  let root = __dirname + '/public'
+  let filePath = root + pathname
+  // 读取文件
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+        
+      //设置资源类型  
+      //设置字符集
+      response.setHeader('content-type','texthtml;charset=utf-8')
+        
+      // 完善错误处理
+      switch(err.code){
+         case 'ENOENT'
+               response.statusCode = 404
+      		   response.end('<h1>404 Not Found</h1>')
+         case 'EPERM'
+               response.statusCode = 403
+      		   response.end('<h1>403 Forbidden</h1>')
+         default:
+              response.statusCode = 500
+      		  response.end('<h1>Internal Server Error</h1>')    
+      }
+      return
+    }
+      
+    //解决乱码问题
+    //获取文件的后缀名
+    let ext = path.extname(filrPath).slice(1)
+    // 获取对应类型
+    let type = mimes[ext]
+    if(type){
+        if(ext === 'html'){
+            response.setHeader('content-type',type + ';charset=utf-8')
+        }else{
+            response.setHeader('content-type',type)
+        }
+    }else{
+        response.setHeader('content-type','application/octet-stream')
+    }
+    response.end(data)
+  })
+})
+
+//监听端口，启动服务
+server.listen(9000, () => {
+  console.log('服务已经启动...')
+})
+```
+
+### GET和POST应用场景与区别
+
+#### GET：
+
+- 在地址栏直接输入url访问
+- 点击a链接
+- link标签引入css
+- script标签引入js
+- video与audio引入多媒体
+- img标签引入图片
+- form标签中的method为get（不区分大小写）
+- ajax中的get请求
+
+#### POST：
+
+- form标签中的method为post（不区分大小写）
+- AJAX的post请求
+
+#### 区别：
+
+1. 作用：GET主要用来获取数据，POST主要用来提交数据
+2. 参数位置：GET带参数请求是将参数缀到URL之后，POST带参数请求是将参数放到请求体中
+3. 安全性：POST请求相对GET安全一些，因为在浏览器中参数会暴露在地址栏
+4. GET请求大小有限制，一般为2k，POST请求没有大小限制
+
+## 模块化
+
+### 介绍：
+
+将一个复杂的程序文件依据一定规则（规范）拆分成多个文件的过程称为模块化。
+
+其中拆分出的每个文件就是一个模块，模块的内部数据是私有的，不过模块可以暴露内部数据以便其他模块使用
+
+### 好处：
+
+- 防止命名冲突
+
+- 高复用性
+
+- 高维护性
+
+```js
+// index.js
+//引入模块
+const tiemo = require('./me.js')
+
+// 调用函数
+tiemo()
+```
+
+```js
+//me.js
+// 声明函数
+function tiemo(){
+    console.log('贴膜...')
+}
+
+// 导出模块，暴露数据,   require返回值数据
+module.exports = tiemo
+// exports暴露方式
+exports.tiemo = tiemo
+```
+
+### 导入模块：
+
+1. 建议写相对路径，且不能省略./和../
+
+2. js和json后缀可省略，node扩展文件也可省略
+
+3. 如果导入其他类型的文件默认以js文件导入处理
+
+4. 如果导入的路径是个文件夹，则会首先检测该文件夹下`package.json`文件中`main`属性对应的文件，如果存在则导入，不存在会报错
+
+   如果`main`属性不存在，或者`package.json`不存在，则会尝试导入文件夹下的`index.js`和`index.json`，如果还是没找到就会报错
+
+5. 导入`node.js`内置模块时，直接require模块的名字即可，无需加./和../
+
+### 导入模块的基本流程：
+
+1. 将相对路径转为绝对路径，定位目标文件
+2. 缓存检测
+3. 读取目标文件代码
+4. 包裹为一个函数并执行（自执行函数），通过`argument.callee.toString()`查看自执行函数
+5. 缓存模块的值
+6. 返回`module.exports`的值
+
+```js
+// 自定义模块导入实现过程（伪代码）
+function require(file){
+    //1.将相对路径转为绝对路径，定位目标文件
+    let absolutePath = path.resolve(__dirname,file)
+    //2.缓存检测
+    if(caches[absolutePath]){
+        return caches[absolutePath]
+    }
+    //3.读取文件的代码
+    let code = fs.readFileSync(absolutePath).toString()
+    //4.包裹为一个函数 然后执行
+    let module = {}
+    let exports = module.exports = {}
+    (function(exports,require,module,__filename,__dirname){
+        const test = {
+            name:'模块名'
+        }
+        module.exports = test
+        
+        //输出
+        console.log(arguments.callee.toString())
+    })(exports,require,module,__filename,__dirname)
+    //5.缓存结果
+    caches[absolutePath] = module.exports
+    //6.返回 module.exports 的值
+    return module.exports
+}
+
+const m = require('./me.js')
+```
+
+### CommonJS模块规范：
+
+> `module.exports`、`exports`以及`require`这些都是`CommonJS`模块化规范中的内容。
+>
+> 而Node.js是实现了CommonJS模块化规范，二者关系有点像JavaScript与ECMAScript
+
+```js
+//package.json
+type:"commonjs"
+
+const a = require('module')
+console.log(a)
+```
+
+#### ESModule
+
+```js
+//package.json
+type:"module"
+
+import * AS all from 'module'
+console.log(all)
+```
+
+#### 区别：
+
+> - commonjs中顶层的this指向这个模块，而esm中顶层this指向undefined
+> - commonjs基于运行时同步加载，esm是基于编译时异步加载
+> - commonjs可以修改值，esm是只读的不可修改
+> - commonjs不可以支持tree shaking，esm是支持tree shaking
+
+import使用函数模式是可以掺杂在逻辑中使用的
+
+```js
+if(true){
+    import('./test.js').then(res => {
+        console.log(res)
+    })
+}
+```
+
+#### 源码位置：
+
+​	lib	->internal	->modules	->cjs	->loader.js
+
+## 包管理工具
+
+### npm
+
+#### 全称：
+
+​      Node Package Manager，是官方内置的包管理工具
+
+#### 初始化包：
+
+​      `npm init`
+
+#### 搜索包：
+
+- 命令行：`npm s/search 包名`
+- 网站搜索：https://www.npmjs.com
+
+#### 下载包：
+
+`npm install/i  包名 `
+
+#### 安装所有包依赖：
+
+`npm install/i`
+
+此命令键入，npm将执行以下步骤：检查config -> 项目级.npmrc  -> 用户级.npmrc   -> 全局的.npmrc -> npm内置的.npmrc -> 检查package-lock.json。
+
+有，比较package.json和package-lock.json是否一致。
+
+不一致会根据package.json的版本下载包并更新package-lock.json的文件。版本号相同则根据lock版本下载。
+
+一致的话会去检查缓存，缓存有则解压到node_moduls。缓存没有的话会执行以下操作：下载资源包->检查完整性->添加到缓存->更新lock文件->解压到node_modules。
+
+没有，则执行以下操作：获取包信息->构建依赖树/扁平化->检查缓存，继续有无判断。
+
+首先安装的依赖都会存放在根目录的node_modules，默认扁平化的方式安装，并且排序规则为.bin->@系列->按照字母先后顺序，使用广度优先的算法先遍历，在遍历依赖树时，npm会首先处理根目录下的依赖，然后逐层处理每个依赖包的依赖，直至所有依赖处理完毕。
+
+#### 安装指定版本：
+
+`npm i 包名@版本号`
+
+#### 删除包:
+
+`npm r/remove`
+
+`npm  r -g 包名`
+
+#### require导入npm包的基本流程：
+
+1. 在当前文件夹下node_modules中寻找同名的文件夹
+2. 在上级目录中下的node_modules中寻找同名的文件夹，直至找到磁盘根目录
+
+#### 开发依赖与生产依赖：
+
+生产依赖：(dependences) `npm i -S 包名`
+
+开发依赖：(devDependences) `npm i -D 包名`
+
+#### 全局安装：
+
+`npm ls -g`全局安装的可执行文件，没有-g则是当前项目可执行文件
+
+`npm i -g nodemon`全局安装完成之后就可以在命令行的任何位置运行`nodemon`命令
+
+作用是自动重启node应用程序
+
+- 全局安装的命令不受工作目录位置影响
+- 可以通过`npm root -g`可以查看全局安装包的位置
+- 不是所有包都适合全局安装，只有全局类的工具才适合，可以通过查看包的官方文档来确定安装方式
+
+#### 修改windows执行策略：
+
+管理员身份运行power shell，键入命令 `set-ExectuionPolicy remoteSigned`，选A
+
+或者切换cmd终端
+
+#### 环境变量Path：
+
+系统读取程序，先从当前文件夹寻找，其次去环境变量寻找，都找不到则报错。设置环境变量Path，可在命令行任意位置运行该程序。
+
+#### 全局变量：
+
+node环境中无法操作DOM和BOM
+
+node中为`global`
+
+浏览器中为`window`
+
+后ECMA2020规范中增加`globalThis`可在node与浏览器通用
+
+```js
+global.name = 'index.js'
+
+globalThis.name = 'index.js'
+require('./child.js')
+
+__dirname //当前文件所在目录的绝对路径
+__filename //当前文件的绝对路径
+
+buffer() ///处理进制数据
+
+process.argv //处理进程
+process.cwd() //获取当前进程的目录
+process.exit()//结束当前进程
+process.on('exit',() => {
+    console.log("退出")
+})
+```
+
+#### CSR SSR SEO：
+
+以下是可在node中操作dom的依赖库，以jsdom为例
+
+`npm i jsdom/cheerio`
+
+##### SSR 服务端渲染
+
+```js
+const { JSDOM } = require('jsdom')
+const fs = require('fs')
+
+const root = new JSDOM(`<DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>`)
+
+//请求一个接口拿到数据填充app里面
+//fetch node18 版本之后
+const document = root.window.document
+const app = document.getElementById('app')
+fetch('https://api.thecatapi.com/v1/images/search?limit=10&page=1')
+  .then(response => response.json())
+  .then(data => {
+    // 使用data填充app
+    console.log(data)
+    data.forEach(item => {
+      const img = document.createElement('img')
+      img.src = item.url
+      img.style.width = '200px'
+      img.style.height = '200px'
+      app.appendChild(img)
+    })
+    fs.writeFileSync('index.html', root.serialize())
+    console.log(root.serialize())
+
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error)
+  });
+```
+
+##### CSR客户端渲染
+
+浏览器阶段完成的渲染，Vue、React等SPA单页面应用
+
+##### 区别：
+
+1. ###### 页面加载方式：
+
+   CSR浏览器下载并执行JavaScript文件，可能存在延迟，所以首屏加载会缓慢
+
+   SSR服务端返给浏览器之前会预先生成完整的HTML页面，包含初始页面内容，因此加载速度较快
+
+2. ###### 内容生成和渲染：
+
+   CSR数据变化时会重新生成DOM，更加灵活
+
+   SSR对于一些静态内容可以提供更好的首次加载性能
+
+3. ###### 用户交互体验：
+
+   CSR一般ajax或者websocket与服务器进行通讯交互，对于SEO可能需要一些额外的处理
+
+   SSR 页面初始内容由服务器生成，对SEO更加友好
+
+##### SEO
+
+搜索引擎优化，TDK（title，description，keyword）H5新标签以及仅有一个H1标签和main等等
+
+CSR ToB后台管理系统，不需要很高的SEO支持，适合CSR
+
+SSR ToC新闻网站，博客，电子商务，门户网站，需要更高的SEO支持，更适合SSR
+
+### nrm
+
+#### 配置命令别名：
+
+```js
+"scripts": {
+    "start": "node index.js",
+    "server": "node server.js",
+    "dev": "cd server && nest start --watch",
+    "bc": "cd client && yarn build",
+    "ba": "cd admin && yarn build",
+    "bs": "cd server && nest build",
+    "lint": "vue-cli-service lint"
+  },
+```
+
+- `npm start`命令属于常见启动命令，可以省略run
+- `npm run`有自动向上级目录查找特性，跟`require`一样
+
+#### 配置淘宝镜像：
+
+##### 直接配置：
+
+`npm config set registry https://registry.npmmirror.com`
+
+##### 工具配置：nrm
+
+###### 安装：
+
+`npm i -g nrm`
+
+###### 修改镜像：
+
+`nrm use taobao` 
+
+###### 查看可配置镜像：
+
+`nrm ls` 
+
+###### 切换npm镜像：
+
+`nrm use npm`
+
+###### 检查是否配置成功：
+
+`npm config list`
+
+#### 发布包：
+
+`npm login`输入npm账号密码
+
+查看npm登录信息：`npm profile get`
+
+`npm publish`
+
+`package.json`中可以配置`files`属性来选择需要暴露的文件
+
+#### 更新包：
+
+修改`package.json`中的`version`，然后`npm publish`
+
+#### 删除包：
+
+`npm unpublish`
+
+`npm unpublish --force`
+
+#### 扩展：
+
+PHP：composer
+
+Python：pip
+
+Java：maven
+
+Go：go mod
+
+JavaScript：npm/yarn/cnpm/other
+
+Ruby：rubyGems
+
+Centos：yum
+
+Ubuntu：apt
+
+MacOS：homebrew
+
+Windows：chocolatey
+
+#### 搭建npm私服：
+
+verdaccio.org/zh-CN/
+
+`npm install verdaccio -g`
+
+`verdaccio --help`
+
+### cnpm
+
+淘宝构建的npmjs.com的完整镜像。
+
+#### 安装：
+
+`npm install -g cnpm --registry=https://registry.npmmirror.com`
+
+### yarn
+
+Facebook，2016推出
+
+#### 特点：
+
+速度超级快、超级安全、超级可靠
+
+#### 安装：
+
+`npm i -g yarn`
+
+#### 全局安装：
+
+`yarn global add nodemon`
+
+可以通过 `yarn global bin`命令查看yarn全局安装目录位置，将该文件夹配置到环境变量中
+
+通过`yarn config list`命令查看镜像配置，同样通过`yarn config set registry https://registry.npmmirror.com`命令来配置淘宝镜像
+
+### nvm
+
+windows 1.1.7好用，实测
+
+显示所有可下载版本：`nvm list available`
+
+查看已安装版本：`nvm list`
+
+安装node：`nvm install 18.12.1`
+
+安装最新版本：`nvm install latest`
+
+卸载node：`nvm uninstall 18.12.1`
+
+切换版本：`nvm use 18.12.1`
+
+### npx
+
+#### 作用：
+
+npx侧重执行命令，执行某个模块命令。
+
+可以在命令行运行node包（node_modules下.bin中）中的可执行文件
+
+#### 优点：
+
+1. 避免全局安装
+2. 总是使用最新版本
+3. 执行任意npm包
+4. 执行GitHub gist
+
+#### 安装：
+
+`npm install npx -g`
+
+## express
+
+### 介绍：
+
+一个基于Node.js平台的极简、灵活的WEB应用开发框架，简单来说就是一个封装好的工具包
+
+### 使用：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/home',(req,res) => {
+    res.end('hello express')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+### 路由：
+
+#### 介绍：
+
+路由确定了应用程序如何响应客户端对特定端点的请求
+
+#### 使用：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/home',(req,res) => {
+    res.end('hello express')
+})
+
+app.get('/',(req,res) => {
+    res.end('home')
+})
+
+app.post('login',(req,res) => {
+    res.end('login login')
+})
+
+// 所有方式
+app.all('/test',(req,res) => {
+    res.end('test test')
+})
+
+// 404响应
+app.all('*',(req,res) => {
+    res.end('404 not found')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+#### 获取请求报文参数：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/request',(req,res) => {
+    
+    console.log(req.method)
+    console.log(req.url)
+    console.log(req.httpVersion)
+    console.log(req.headers)
+    
+    //express 操作
+    console.log(req.path)
+    console.log(req.query)
+    //获取ip
+    console.log(req.ip)  
+    //获取请求头
+    console.log(req.get('host')) 
+    
+    res.end('hello express')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+#### 获取路由参数：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/:id.html',(req,res) => { 
+    //获取 URL 路由参数
+    console.log(req.params.id)
+    res.setHeader('content-type','texthtml;charset-utf-8')
+    res.end('商品详情')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+#### 响应设置：
+
+##### 一般响应设置：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/:id.html',(req,res) => { 
+    // 原生响应
+    res.statusCode = 404
+    res.statusMessage = 'love'
+    res.setHeader('content-type','texthtml;charset-utf-8')
+    res.write('response')
+    res.end('商品详情') 
+    
+    //express 响应 可以链式调用
+    res.status(500)
+    res.set('aaa','bbb')
+    res.send('你好 Express')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+##### 其他响应设置：
+
+```js
+//1.导入express
+const express = require('express')
+
+//2.创建应用对象
+const app = express()
+
+//3.创建路由
+app.get('/:id.html',(req,res) => { 
+    //express 响应 可以链式调用
+    
+    //跳转响应
+    res.redirect('http://jd.com')
+    
+    // 下载响应
+    res.download(__dirname + '/package.json')
+    
+    // JSON 响应
+    res.json({
+        name:'aaa',
+        slogon:'bbbbbbb'
+    })
+    
+    // 响应文件内容
+    res.sendFile(__dirname + '/test.html')
+})
+
+//4.监听端口，启动服务
+app.listen(3000,() => {
+    console.log('服务已经启动，端口 3000 正在监听中....')
+})
+```
+
+### 中间件：
+
+#### 介绍：
+
+中间件（Middleware）本质是一个回调函数，
+
+可以像路由回调一样访问请求对象（request），响应对象（response）
+
+#### 作用：
+
+使用函数封装公共操作，简化代码
+
+#### 类型：
+
+- 全局中间件
+- 路由中间件
+
