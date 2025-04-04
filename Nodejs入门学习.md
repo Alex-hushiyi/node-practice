@@ -558,491 +558,6 @@ console.log(path.dirname(str))
 console.log(path.extname(str))
 ```
 
-## os
-
-内置模块：跟操作系统进行交互的模块
-
-```js
-const os = requir('node:os')
-
-// platform 获取操作系统平台 win32 windows darwin mac linux
-cosnole.log(os.platform())
-
-//release 获取操作系统版本号
-cosnole.log(os.release())
-cosnole.log(os.type())
-cosnole.log(os.version())
-
-// exec 可以执行shell 命令
-const { exec } = require('child_process')
-
-// 判断不同的操作系统 分别调用对应的shell 命令
-const platform = os.platform()
-
-const open = (url) => {
-  //mac
-  if (platform === 'darwin') {
-    exec(`open ${url}`)
-  } else if (platform === 'win32') {
-    exec(`start ${url}`)
-  } else {
-    exec(`xdg-open ${url}`) // linux
-  }
-}
-open('http://www.baidu.com')
-
-// 读取用户目录  原理: win %userprofile%   mac $HOME
-console.log(os.homedir())
-
-// 获取cpu架构 x64
-console.log(os.arch())
-// 操作系统线程cpu信息
-console.log(os.cpus())
-console.log(os.cpus().length)
-
-//网络信息
-console.log(os.networkInterfaces())
-```
-
-## process
-
-```js
-//os cpu 架构
-console.log(process.arch)
-console.log(process.platform)
-
-// 返回数组
-console.log(process.argv.inclludes('--version') ? '1.0.0' : '无')
-
-//cwd() 获取工作目录 __dirname esm 模式下用不了 __dirname 可以使用cwd代替
-console.log(process.cwd(),__dirname)
-
-// memoryUsage 内存信息
-console.log(process.memoryUsage())
-{
-  rss: 29396992,  //常驻集大小  物理内存的存量
-  heapTotal: 5799936, // V8给分配的堆内存的总大小包括未使用的内存
-  heapUsed: 4599040, // 已经使用的内存
-  external: 1619423, // 外部的内存  C C++ 使用的
-  arrayBuffers: 10515  // 二进制的总量
-}
-
-// exit
-setTimeout(()=>{
-   console.log(5)
-},5000)
-
-process.on('exit', ()=>{
-    console.log('进程退出了')
-})
-
-setTimeout(()=>{
-    process.exit()
-},2000)
-
-// kill 杀死进程
-process.kill(process.pid)
-
-// env 环境变量  获取操作系统所有的环境变量  
-//可以修改，且修改只在当前进程生效，不会影响系统环境变量
-console.log(process.env)
-```
-
-## ffmpeg
-
-开源跨平台多媒体处理工具，可以处理音频、视频和多媒体流。ffmpeg.p2hp.com/download.html
-
-`git clone https://git.ffmpeg.org/ffmpeg.gif.git ffmpeg`
-
-安装之后查看版本`ffmpeg --version`
-
-查看详细参数`ffmpeg -h`
-
-查看过滤器 `ffmpeg -filters`
-
-```js
-const { exec, execSync } = require('child_process')
-
-// 1. 基本格式转换 avi mp4 gif等
-execSync('ffmpeg -i input.mp4 output.gif', { stdio: 'inherit' })
-
-// 2.提取视频中的音频
-execSync('ffmpeg -i input.mp4 output.mp3', { stdio: 'inherit' })
-
-// 3.裁剪视频
-execSync('ffmpeg -ss 10 to 20  -i input.mp4 output.mp4', { stdio: 'inherit' })
-
-// 4.加水印
-execSync('ffmpeg -i input.mp4 -vf drawtext=text="要添加的水印":fontsize=30:x=10:y=10:fontcolor=white output.mp4', { stdio: 'inherit' })
-
-// 5.删除水印
-execSync('ffmpeg -i input.mp4 -vf delogo=w=120:h=30:x=10:y=10 output.mp4', { stdio: 'inherit' })
-
-```
-
-## pngquant
-
-用于压缩PNG图像文件的工具。Median Cut量化算法
-
-pngquant.com/
-
-`pngquant --version`
-
-```js
-import { exec } from 'child_process'
-
-// --output 压缩输出命令
-// --quality  压缩质量 0-100 数字越高质量越好，文件越大
-// --speed 压缩速度 1-11 数字越高速度越快，质量越低
-exec('pngquant a.png --speed=1 --quality=80 --output b.png')
-```
-
-
-
-## eventEmitter
-
-```js
-const eventEmitter = require('events')
-
-// 用法 跟event bus 第三方库 mitt 采用发布订阅模式
-//发布订阅模式 off on emit once
-// process的源码嫁接了eventEmitter，所以process也可以使用on emit once off,
-//并且挂载正在gloableThis上，所以可以直接使用
-
-const bus = new eventEmitter()
-// 事件的默认最大监听数量是10个
-bus.setMaxListeners(20)
-console.log(bus.getMaxListeners())
-// 订阅一个事件
-
-const fn = (a, b) => {
-  console.log(a, b)
-}
-bus.on('event', fn)
-// bus.once('event',fn)
-// bus.off('event',fn)
-
-//发布
-
-bus.emit('event', 1, 2)
-bus.emit('event', 1, 2)
-bus.emit('event', 1, 2)
-
-```
-
-## util
-
-```js
-import util from 'util'
-import { exec } from 'child_process'
-
-const execPromise = util.promisify(exec)
-
-execPromise('node -v').then((stdout) => {
-  console.log(stdout)
-}).catch(err => {
-  console.error(err)
-})
-
-/// printf %s 匹配字符的  %d 匹配数字的 
-console.log(util.format('%s---%s', 'Hello', 'world'))
-
-
-// exec('node -v', (err, stdout, stderr) => {
-//   if (err) {
-//     console.error(err)
-//     return
-//   }
-//   console.log(stdout)
-// })
-```
-
-## crypto
-
-为了提供通用的加密和哈希算法
-
-### 对称加密算法：
-
-```js
-const crypto = require('crypto')
-
-// 对称加密算法
-// 双方协商一个密钥以及iv
-// 第一个参数 algorithm 算法 aes-256-cbc
-// 第二个参数 key 密钥 32位
-// 第三个参数 iv 初始化向量 16位 保证每次加密的结果不一样 密钥串缺少位数 还可以进行补码操作
-
-let algorithm = 'aes-256-cbc'
-let key = crypto.randomBytes(32)
-let iv = Buffer.from(crypto.randomBytes(16))
-const cipher = crypto.createCipheriv(algorithm, key, iv)
-console.log(cipher.update('hello world', 'utf8', 'hex'))
-console.log(cipher.final('hex'))
-
-// 对称解密算法
-const decipher = crypto.createDecipheriv(algorithm, key, iv)
-console.log(decipher.update('c5b2f8b1e1c1f3b1f4b1', 'hex', 'utf8'))
-console.log(decipher.final('utf8'))
-```
-
-### 非对称加密算法：
-
-```js
-const crypto = require('crypto')
-// 非对称加密算法
-// 生成公钥和私钥
-// 私钥只能是管理员拥有的 不能对外公开
-// 公钥可以对外公开
-
-
-const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-  modulusLength: 2048, // 长度越长 加密越安全 但是效率越低 
-})
-
-// 公钥加密
-const encrypted = crypto.publicEncrypt(publicKey, buffer.from('hello world', 'utf8'))
-console.log(encrypted.toString('hex'))
-
-// 私钥解密
-const decrypted = crypto.privateDecrypt(privateKey, encrypted)
-console.log(decrypted.toString('utf8'))
-```
-
-### 哈希函数：
-
-```js
-const crypto = require('crypto')
-// 哈希函数
-// 不能被解密 单向 不可逆
-// 具有唯一性
-// 可以用md5 校验文件的一致性
-// 读取文件内容 转换成md5 上传到服务器 后端拿到文件内容 转换成md5 
-// 跟前端的md5进行比对 如果一致 说明文件没有被篡改
-// 如果不一致 说明文件被篡改了
-crypto.createHash('sha256').update('hello world').digest('hex')
-crypto.createHash('md5').update('hello world').digest('hex')
-crypto.createHash('sha1').update('hello world').digest('hex')
-```
-
-## 脚手架
-
-~~~markdown
-### 编写脚手架
-
-1.自定义命令 而不是 node 去执行我们的脚本
-```json
-"bin": {
-    "test-cli":"src/index.js"
-  },
-```
-```sh
-npm link
-```
-创建一个软连接挂载到全局
-2.-V --help creat 命令行交互工具
-3.去下载模板isTs 下载ts版本 不要 就下载js版本
-
-需要用到的依赖库:commander inquirer ora download-git-repo
-~~~
-
-```js
-#!/usr/bin/env node
-// 告诉操作系统我执行自定义命令的时候 你帮我用node去执行 这个文件
-import { program } from "commander";
-import fs from "node:fs";
-import inquirer from "inquirer";
-import { checkPath,downloadTemplate} from "./util.js";
-
-let json = fs.readFileSync('./package.json')
-json = JSON.parse(json)
-
-
-program.version(json.version)
-console.log(json.version);
-
-program.command('create <projectName>')
-.alias('c')
-.description('创建项目')
-.action((projectName) => {
-  console.log(projectName);
-  inquirer.prompt([
-    {
-      type: 'input',  //输入 input 输入 confirm 确认 list 列表 选择框 checkbox
-      name: 'projectName', //返回值的key
-      message: '请输入项目名称', //描述
-      default: projectName //默认值
-    },
-    {
-      type: 'confirm',
-      name: 'isTS',
-      message: '是否选用typescript模板',
-    }
-  ]).then(res => {
-    if (checkPath(projectName)) {
-      console.log('项目已存在');
-      return
-    }
-    if (res.isTS) {
-      downloadTemplate('ts',res.projectName)
-    } else {
-      downloadTemplate('js',res.projectName)
-    }
-  })
-})
-```
-
-```js
-import fs from "fs";
-import download from "download-git-repo";
-import ora from "ora";
-let spinner = ora("正在下载模板...");
-
-// 检查路径
-export const checkPath = (path) => {
-  if (fs.existsSync(path)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-export const downloadTemplate = (branch,name) => {
-  return new Promise((resolve, reject) => {
-    spinner.start();
-    download(`direct:https://gitee.com/chinafaker//vue-template.git#${branch}`, name, { clone: true }, (err) => {
-      if (err) {
-        reject(err)
-      }
-        resolve()
-      spinner.succeed('下载成功')
-    })
-  })
-}
-```
-
-## ejs(MarkDown 转 html)
-
-```markdown
-### MarkDown 转 html
-需要用的的依赖库：ejs marked browser-sync
-```
-
-```js
-const ejs = require('ejs');
-const marked = require('marked');
-const fs = require('fs');
-let browser;
-const browserSync = require('browser-sync');
-const server = () => {
-    browser = browserSync.create();
-    browser.init({
-        server: {
-            baseDir: './',
-            index: 'index.html'
-        }
-    });
-}
-const init = (callback) => {
-    const file = fs.readFileSync('README.md', 'utf-8');
-    console.log(marked.parse(file));
-    ejs.renderFile('template.ejs', 
-      {content: marked.parse(file),
-      title: "Markdown to html"
-    }, (err, data) => {
-        if(err) throw err;
-        fs.writeFileSync('index.html', data);
-        callback && callback();
-    });
-}
-fs.watchFile('README.md', (curr, prev) => {
-  if(curr.mtime !== prev.mtime) {
-    init(() => {
-      browser.reload();
-    });
-  }
-});
-init(() => {
-    server();
-});
-```
-
-```ejs
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
-</head>
-<body>
-  <%- content %>
-</body>
-</html>
-```
-
-## zlib(压缩、解压)
-
-#### gzip
-
-```js
-const zlib = require('zlib');
-const fs = require('fs');
-
-// 压缩 createGzip
-const readStream = fs.createReadStream('./index.txt', 'utf8');
-const writeStream = fs.createWriteStream('./index.txt.gz');
-readStream.pipe(zlib.createGzip()).pipe(writeStream);
-
-// 解压 createGunzip
-const readStream = fs.createReadStream('./index.txt.gz');
-const writeStream = fs.createWriteStream('./index2.txt');
-readStream.pipe(zlib.createGunzip()).pipe(writeStream);
-```
-
-#### deflate
-
-```js
-const zlib = require('zlib');
-const fs = require('fs');
-
-// 压缩 createDeflate
-const readStream = fs.createReadStream('./index.txt');
-const writeStream = fs.createWriteStream('./index.txt.defate');
-readStream.pipe(zlib.createDeflate()).pipe(writeStream);
-
-// 解压 createInflate
-const readStream = fs.createReadStream('./index.txt.defate');
-const writeStream = fs.createWriteStream('./index3.txt');
-readStream.pipe(zlib.createInflate()).pipe(writeStream);
-```
-
-#### gzip和deflate区别
-
-1. **压缩算法**：Gzip使用的是Deflate压缩算法，该算法结合了LZ77算法和哈夫曼编码。LZ77算法用于数据的重复字符串的替换和引用，而哈夫曼编码用于进一步压缩数据。
-2. **压缩效率**：Gzip压缩通常具有更高的压缩率，因为它使用了哈夫曼编码进一步压缩数据。哈夫曼编码根据字符的出现频率，将较常见的字符用较短的编码表示，从而减小数据的大小。
-3. **压缩速度**:相比较仅使用Deflate的方式，Gzip压缩需要更多的计算和处理时间，因为它还要进行哈夫曼编码的步骤。因此，在压缩速度方面，**Deflate可能比Gzip更快**。
-4. **应用场景**：Gzip压缩常用于文件压缩、网络传输和HTTP响应的内容编码。它广泛应用于Web服务器和浏览器之间的数据传输，以减小文件大小和提升网络传输效率。
-
-#### 网络数据压缩
-
-```js
-const zlib = require('zlib');
-const http = require('http');
-
-const server = http.createServer((req, res) => {
-  const text = 'hello world'.repeat(1000);
-  // res.setHeader('Content-Encoding', 'gzip');
-  res.setHeader('Content-Encoding', 'deflate');
-  res.setHeader('Content-type', 'text/plain; charset=utf-8');
-  // let result = zlib.gzipSync(text);
-  let result = zlib.deflateSync(text);
-    res.end(result);
-  
-});
-
-server.listen(3000, () => console.log('启动了'));
-```
-
 ## HTTP协议
 
 - Hypertext Transfer Protocol 超文本传输协议
@@ -2397,3 +1912,631 @@ app.listen(3000,() => {
 
 ### 获取请求体数据
 
+借助body-parser依赖包
+
+`npm install body-parser`
+
+```js
+const bodyParser = require("body-parser");
+//配置解析表单数据的中间件
+const jsonParser = bodyParser.json(); //解析json数据
+
+const urlencodedParser = bodyParser.urlencoded({ extended: false }); //解析表单数据
+```
+
+### 防盗链
+
+```js
+// 声明中间件函数
+app.use((req, res, next) => {
+  // 获取请求路径
+  let referer = req.get("referer");
+  console.log("请求路径：", referer);
+  if (referer) {
+    let url = new URL(referer);
+    let hostname = url.hostname;
+    console.log("请求的域名：", hostname);
+    // 判断请求路径是否是 /home
+    if (hostname !== "127.0.0.1") {
+      // 如果不是，返回 404
+      res.status(404).send("404 Not Found");
+      return
+    }
+  }
+  next();
+});
+```
+
+### 路由模块化
+
+```js
+//导入express
+const express = require("express");
+const homeRouter = require("./router/home");
+const adminRouter = require("./router/admin");
+//创建应用对象
+const app = express();
+
+
+app.use(homeRouter)
+app.use(adminRouter)
+```
+
+### EJS模板引擎(MarkDown 转 html)
+
+分离用户界面和业务数据的一种技术
+
+`npm i ejs --save`
+
+表达语法：`<%= 变量名or代码  %>`可在代码中多行拼接写
+
+```markdown
+### MarkDown 转 html
+需要用的的依赖库：ejs marked browser-sync
+```
+
+```js
+const ejs = require('ejs');
+const marked = require('marked');
+const fs = require('fs');
+let browser;
+const browserSync = require('browser-sync');
+const server = () => {
+    browser = browserSync.create();
+    browser.init({
+        server: {
+            baseDir: './',
+            index: 'index.html'
+        }
+    });
+}
+const init = (callback) => {
+    const file = fs.readFileSync('README.md', 'utf-8');
+    console.log(marked.parse(file));
+    ejs.renderFile('template.ejs', 
+      {content: marked.parse(file),
+      title: "Markdown to html"
+    }, (err, data) => {
+        if(err) throw err;
+        fs.writeFileSync('index.html', data);
+        callback && callback();
+    });
+}
+fs.watchFile('README.md', (curr, prev) => {
+  if(curr.mtime !== prev.mtime) {
+    init(() => {
+      browser.reload();
+    });
+  }
+});
+init(() => {
+    server();
+});
+```
+
+```ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+</head>
+<body>
+  <%- content %>
+</body>
+</html>
+```
+
+#### express中ejs的使用
+
+```js
+// 导入express
+const express = require('express');
+//导入path
+const path = require('path');
+
+//创建express应用
+const app = express();
+
+//1.设置模板引擎
+app.set('view engine', 'ejs'); //pug twing
+//2.设置模板文件存放目录
+app.set('views', path.resolve(__dirname, './views'));
+
+
+app.get('/home', (req, res) => {
+    // 3.render方法渲染模板
+    res.render('home', { title: 'Markdown to HTML' });
+    // 4.创建模板文件  
+});
+
+app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
+});
+```
+
+### express-generator
+
+类似于vue脚手架，通过此依赖快速创建express框架的node项目
+
+`npm install -g express-generator`
+
+`express -v`  
+
+`express -e 文件名`
+
+### 文件上传
+
+enctype属性
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="/login" method="post" enctype="multipart/form-data">
+        用户名：<input type="text" name="username" id="username"><br>
+        密码：<input type="password" name="password" id="password"><br>
+        <input type="submit" value="提交">
+    </form>
+</body>
+</html>
+```
+
+### 处理文件上传
+
+`npm install formidable`
+
+通过`formidable`依赖来访问文件的所有属性，便于文件操作
+
+## os
+
+内置模块：跟操作系统进行交互的模块
+
+```js
+const os = requir('node:os')
+
+// platform 获取操作系统平台 win32 windows darwin mac linux
+cosnole.log(os.platform())
+
+//release 获取操作系统版本号
+cosnole.log(os.release())
+cosnole.log(os.type())
+cosnole.log(os.version())
+
+// exec 可以执行shell 命令
+const { exec } = require('child_process')
+
+// 判断不同的操作系统 分别调用对应的shell 命令
+const platform = os.platform()
+
+const open = (url) => {
+  //mac
+  if (platform === 'darwin') {
+    exec(`open ${url}`)
+  } else if (platform === 'win32') {
+    exec(`start ${url}`)
+  } else {
+    exec(`xdg-open ${url}`) // linux
+  }
+}
+open('http://www.baidu.com')
+
+// 读取用户目录  原理: win %userprofile%   mac $HOME
+console.log(os.homedir())
+
+// 获取cpu架构 x64
+console.log(os.arch())
+// 操作系统线程cpu信息
+console.log(os.cpus())
+console.log(os.cpus().length)
+
+//网络信息
+console.log(os.networkInterfaces())
+```
+
+## process
+
+```js
+//os cpu 架构
+console.log(process.arch)
+console.log(process.platform)
+
+// 返回数组
+console.log(process.argv.inclludes('--version') ? '1.0.0' : '无')
+
+//cwd() 获取工作目录 __dirname esm 模式下用不了 __dirname 可以使用cwd代替
+console.log(process.cwd(),__dirname)
+
+// memoryUsage 内存信息
+console.log(process.memoryUsage())
+{
+  rss: 29396992,  //常驻集大小  物理内存的存量
+  heapTotal: 5799936, // V8给分配的堆内存的总大小包括未使用的内存
+  heapUsed: 4599040, // 已经使用的内存
+  external: 1619423, // 外部的内存  C C++ 使用的
+  arrayBuffers: 10515  // 二进制的总量
+}
+
+// exit
+setTimeout(()=>{
+   console.log(5)
+},5000)
+
+process.on('exit', ()=>{
+    console.log('进程退出了')
+})
+
+setTimeout(()=>{
+    process.exit()
+},2000)
+
+// kill 杀死进程
+process.kill(process.pid)
+
+// env 环境变量  获取操作系统所有的环境变量  
+//可以修改，且修改只在当前进程生效，不会影响系统环境变量
+console.log(process.env)
+```
+
+## ffmpeg
+
+开源跨平台多媒体处理工具，可以处理音频、视频和多媒体流。ffmpeg.p2hp.com/download.html
+
+`git clone https://git.ffmpeg.org/ffmpeg.gif.git ffmpeg`
+
+安装之后查看版本`ffmpeg --version`
+
+查看详细参数`ffmpeg -h`
+
+查看过滤器 `ffmpeg -filters`
+
+```js
+const { exec, execSync } = require('child_process')
+
+// 1. 基本格式转换 avi mp4 gif等
+execSync('ffmpeg -i input.mp4 output.gif', { stdio: 'inherit' })
+
+// 2.提取视频中的音频
+execSync('ffmpeg -i input.mp4 output.mp3', { stdio: 'inherit' })
+
+// 3.裁剪视频
+execSync('ffmpeg -ss 10 to 20  -i input.mp4 output.mp4', { stdio: 'inherit' })
+
+// 4.加水印
+execSync('ffmpeg -i input.mp4 -vf drawtext=text="要添加的水印":fontsize=30:x=10:y=10:fontcolor=white output.mp4', { stdio: 'inherit' })
+
+// 5.删除水印
+execSync('ffmpeg -i input.mp4 -vf delogo=w=120:h=30:x=10:y=10 output.mp4', { stdio: 'inherit' })
+
+```
+
+## pngquant
+
+用于压缩PNG图像文件的工具。Median Cut量化算法
+
+pngquant.com/
+
+`pngquant --version`
+
+```js
+import { exec } from 'child_process'
+
+// --output 压缩输出命令
+// --quality  压缩质量 0-100 数字越高质量越好，文件越大
+// --speed 压缩速度 1-11 数字越高速度越快，质量越低
+exec('pngquant a.png --speed=1 --quality=80 --output b.png')
+```
+
+
+
+## eventEmitter
+
+```js
+const eventEmitter = require('events')
+
+// 用法 跟event bus 第三方库 mitt 采用发布订阅模式
+//发布订阅模式 off on emit once
+// process的源码嫁接了eventEmitter，所以process也可以使用on emit once off,
+//并且挂载正在gloableThis上，所以可以直接使用
+
+const bus = new eventEmitter()
+// 事件的默认最大监听数量是10个
+bus.setMaxListeners(20)
+console.log(bus.getMaxListeners())
+// 订阅一个事件
+
+const fn = (a, b) => {
+  console.log(a, b)
+}
+bus.on('event', fn)
+// bus.once('event',fn)
+// bus.off('event',fn)
+
+//发布
+
+bus.emit('event', 1, 2)
+bus.emit('event', 1, 2)
+bus.emit('event', 1, 2)
+
+```
+
+## util
+
+```js
+import util from 'util'
+import { exec } from 'child_process'
+
+const execPromise = util.promisify(exec)
+
+execPromise('node -v').then((stdout) => {
+  console.log(stdout)
+}).catch(err => {
+  console.error(err)
+})
+
+/// printf %s 匹配字符的  %d 匹配数字的 
+console.log(util.format('%s---%s', 'Hello', 'world'))
+
+
+// exec('node -v', (err, stdout, stderr) => {
+//   if (err) {
+//     console.error(err)
+//     return
+//   }
+//   console.log(stdout)
+// })
+```
+
+## crypto
+
+为了提供通用的加密和哈希算法
+
+### 对称加密算法：
+
+```js
+const crypto = require('crypto')
+
+// 对称加密算法
+// 双方协商一个密钥以及iv
+// 第一个参数 algorithm 算法 aes-256-cbc
+// 第二个参数 key 密钥 32位
+// 第三个参数 iv 初始化向量 16位 保证每次加密的结果不一样 密钥串缺少位数 还可以进行补码操作
+
+let algorithm = 'aes-256-cbc'
+let key = crypto.randomBytes(32)
+let iv = Buffer.from(crypto.randomBytes(16))
+const cipher = crypto.createCipheriv(algorithm, key, iv)
+console.log(cipher.update('hello world', 'utf8', 'hex'))
+console.log(cipher.final('hex'))
+
+// 对称解密算法
+const decipher = crypto.createDecipheriv(algorithm, key, iv)
+console.log(decipher.update('c5b2f8b1e1c1f3b1f4b1', 'hex', 'utf8'))
+console.log(decipher.final('utf8'))
+```
+
+### 非对称加密算法：
+
+```js
+const crypto = require('crypto')
+// 非对称加密算法
+// 生成公钥和私钥
+// 私钥只能是管理员拥有的 不能对外公开
+// 公钥可以对外公开
+
+
+const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048, // 长度越长 加密越安全 但是效率越低 
+})
+
+// 公钥加密
+const encrypted = crypto.publicEncrypt(publicKey, buffer.from('hello world', 'utf8'))
+console.log(encrypted.toString('hex'))
+
+// 私钥解密
+const decrypted = crypto.privateDecrypt(privateKey, encrypted)
+console.log(decrypted.toString('utf8'))
+```
+
+### 哈希函数：
+
+```js
+const crypto = require('crypto')
+// 哈希函数
+// 不能被解密 单向 不可逆
+// 具有唯一性
+// 可以用md5 校验文件的一致性
+// 读取文件内容 转换成md5 上传到服务器 后端拿到文件内容 转换成md5 
+// 跟前端的md5进行比对 如果一致 说明文件没有被篡改
+// 如果不一致 说明文件被篡改了
+crypto.createHash('sha256').update('hello world').digest('hex')
+crypto.createHash('md5').update('hello world').digest('hex')
+crypto.createHash('sha1').update('hello world').digest('hex')
+```
+
+## 脚手架
+
+~~~markdown
+### 编写脚手架
+
+1.自定义命令 而不是 node 去执行我们的脚本
+```json
+"bin": {
+    "test-cli":"src/index.js"
+  },
+```
+```sh
+npm link
+```
+创建一个软连接挂载到全局
+2.-V --help creat 命令行交互工具
+3.去下载模板isTs 下载ts版本 不要 就下载js版本
+
+需要用到的依赖库:commander inquirer ora download-git-repo
+~~~
+
+```js
+#!/usr/bin/env node
+// 告诉操作系统我执行自定义命令的时候 你帮我用node去执行 这个文件
+import { program } from "commander";
+import fs from "node:fs";
+import inquirer from "inquirer";
+import { checkPath,downloadTemplate} from "./util.js";
+
+let json = fs.readFileSync('./package.json')
+json = JSON.parse(json)
+
+
+program.version(json.version)
+console.log(json.version);
+
+program.command('create <projectName>')
+.alias('c')
+.description('创建项目')
+.action((projectName) => {
+  console.log(projectName);
+  inquirer.prompt([
+    {
+      type: 'input',  //输入 input 输入 confirm 确认 list 列表 选择框 checkbox
+      name: 'projectName', //返回值的key
+      message: '请输入项目名称', //描述
+      default: projectName //默认值
+    },
+    {
+      type: 'confirm',
+      name: 'isTS',
+      message: '是否选用typescript模板',
+    }
+  ]).then(res => {
+    if (checkPath(projectName)) {
+      console.log('项目已存在');
+      return
+    }
+    if (res.isTS) {
+      downloadTemplate('ts',res.projectName)
+    } else {
+      downloadTemplate('js',res.projectName)
+    }
+  })
+})
+```
+
+```js
+import fs from "fs";
+import download from "download-git-repo";
+import ora from "ora";
+let spinner = ora("正在下载模板...");
+
+// 检查路径
+export const checkPath = (path) => {
+  if (fs.existsSync(path)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const downloadTemplate = (branch,name) => {
+  return new Promise((resolve, reject) => {
+    spinner.start();
+    download(`direct:https://gitee.com/chinafaker//vue-template.git#${branch}`, name, { clone: true }, (err) => {
+      if (err) {
+        reject(err)
+      }
+        resolve()
+      spinner.succeed('下载成功')
+    })
+  })
+}
+```
+
+## zlib(压缩、解压)
+
+#### gzip
+
+```js
+const zlib = require('zlib');
+const fs = require('fs');
+
+// 压缩 createGzip
+const readStream = fs.createReadStream('./index.txt', 'utf8');
+const writeStream = fs.createWriteStream('./index.txt.gz');
+readStream.pipe(zlib.createGzip()).pipe(writeStream);
+
+// 解压 createGunzip
+const readStream = fs.createReadStream('./index.txt.gz');
+const writeStream = fs.createWriteStream('./index2.txt');
+readStream.pipe(zlib.createGunzip()).pipe(writeStream);
+```
+
+#### deflate
+
+```js
+const zlib = require('zlib');
+const fs = require('fs');
+
+// 压缩 createDeflate
+const readStream = fs.createReadStream('./index.txt');
+const writeStream = fs.createWriteStream('./index.txt.defate');
+readStream.pipe(zlib.createDeflate()).pipe(writeStream);
+
+// 解压 createInflate
+const readStream = fs.createReadStream('./index.txt.defate');
+const writeStream = fs.createWriteStream('./index3.txt');
+readStream.pipe(zlib.createInflate()).pipe(writeStream);
+```
+
+#### gzip和deflate区别
+
+1. **压缩算法**：Gzip使用的是Deflate压缩算法，该算法结合了LZ77算法和哈夫曼编码。LZ77算法用于数据的重复字符串的替换和引用，而哈夫曼编码用于进一步压缩数据。
+2. **压缩效率**：Gzip压缩通常具有更高的压缩率，因为它使用了哈夫曼编码进一步压缩数据。哈夫曼编码根据字符的出现频率，将较常见的字符用较短的编码表示，从而减小数据的大小。
+3. **压缩速度**:相比较仅使用Deflate的方式，Gzip压缩需要更多的计算和处理时间，因为它还要进行哈夫曼编码的步骤。因此，在压缩速度方面，**Deflate可能比Gzip更快**。
+4. **应用场景**：Gzip压缩常用于文件压缩、网络传输和HTTP响应的内容编码。它广泛应用于Web服务器和浏览器之间的数据传输，以减小文件大小和提升网络传输效率。
+
+#### 网络数据压缩
+
+```js
+const zlib = require('zlib');
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  const text = 'hello world'.repeat(1000);
+  // res.setHeader('Content-Encoding', 'gzip');
+  res.setHeader('Content-Encoding', 'deflate');
+  res.setHeader('Content-type', 'text/plain; charset=utf-8');
+  // let result = zlib.gzipSync(text);
+  let result = zlib.deflateSync(text);
+    res.end(result);
+  
+});
+
+server.listen(3000, () => console.log('启动了'));
+```
+
+## lowdb
+
+简单保存数据依赖包
+
+`npm install lowdb`
+
+需要结合的依赖包shortid
+
+`npm install shortid`
+
+基本命令：
+
+```js
+
+```
+
+## mongodb
+
+## api
+
+## 会话控制
