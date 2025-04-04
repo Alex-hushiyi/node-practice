@@ -2532,10 +2532,117 @@ server.listen(3000, () => console.log('启动了'));
 基本命令：
 
 ```js
+//导入数据库模块
+const low = require("lowdb");
+const FileSync = require("lowdb/adapters/FileSync");
+const adapter = new FileSync("db.json");
+//创建数据库对象
+const db = low(adapter);
 
+// 设置默认值
+db.defaults({ users: [] }).write();
+// 添加数据
+db.get("users").push({ id: 1, name: "张三" }).write();
+// 获取数据
+const users = db.get("users").value();
+console.log(users);
+// 更新数据
+db.get("users").find({ id: 1 }).assign({ name: "李四" }).write();
+// 删除数据
+db.get("users").remove({ id: 1 }).write();
+// 查询数据
+const users2 = db.get("users").value();
+console.log(users2);
+// 查询数据
+const user = db.get("users").find({ id: 1 }).value();
+console.log(user);
 ```
 
 ## mongodb
+
+### 简介：
+
+MongoDB是一个基于分布式文件存储的数据库
+
+### 作用：
+
+管理数据，对数据进行增删改查
+
+### 特点：
+
+1. 速度更快
+2. 扩展性更强
+3. 安全性更强
+
+### 启动命令：mongod
+
+### 命令行交互：
+
+#### 数据库命令
+
+1. 显示所有的数据库：`show dbs`
+2. 切换到指定的数据库，如果数据库不存在会自动创建数据库：`use 数据库名`
+3. 显示当前所在的数据库：`db`
+4. 删除当前数据库：`use 库名` `db.dropDatabase()`
+
+#### 集合命令：
+
+1. 创建集合：`db.createCollection('集合名称')`
+2. 显示当前数据库中的所有集合：`show collections`
+3. 删除某个集合：`db.集合名.drop()`
+4. 重命名集合：`db.集合名.renameCollection('newName')`
+
+#### 文档命令：
+
+1. 插入文档：`db,集合名.insert(文档对象)`
+2. 查询文档：`db.集合名.find(查询条件)`_id是mongodb自动生成的唯一编号，用来唯一标识文档
+3. 更新文档：`db.集合名.update(查询条件，新的文档)` `db.集合名.update({name:'张三'},{$set:{age:19}})`
+4. 删除文档：`db.集合名.remove(查询条件)`
+
+### 应用场景：
+
+1. 新增：
+   - 用户注册
+   - 发布视频
+   - 发布商品
+   - 发朋友圈
+   - 发评论
+   - 发微博
+   - 发弹幕
+   - ……
+2. 删除：
+   - 删除评论
+   - 删除商品
+   - 删除文章
+   - 删除视频
+   - 删除微博
+   - ……
+3. 更新：
+   - 更新个人信息
+   - 修改商品价格
+   - 修改文章内容
+   - ……
+4. 查询：
+   - 商品列表
+   - 视频列表
+   - 朋友圈列表
+   - 微博列表
+   - 搜索功能
+   - ……
+
+## mongoose
+
+### 介绍：
+
+对象文档模型库
+
+### 作用：
+
+方便使用代码操作mongodb数据库
+
+### 使用流程：
+
+
 
 ## api
 
