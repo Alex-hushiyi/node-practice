@@ -3048,3 +3048,174 @@ js编写的工具包，用于启动临时的接口服务
 - apifox
 
 ## 会话控制
+
+### 介绍:
+
+对会话进行控制。HTTP是一种无状态协议，没有办法区分多次的请求是否来自于同一个客户端，无法区分用户，产品中存在大量这样的需求，需要进行会话控制。
+
+### 常见技术：
+
+- cookie
+- session
+- token
+
+### cookie：
+
+HTTP服务器发送到用户浏览器并保存在本地的小块数据，按照域名划分保存
+
+#### 特点：
+
+浏览器向服务器发送请求时，会自动将当前域名下可用的cookie设置在请求头中，然后传递给服务器
+
+#### 浏览器操作cookie：
+
+1. 禁用所有cookie
+2. 删除cookie
+3. 查看cookie
+
+#### express中操作cookie
+
+##### 设置cookie：
+
+```js
+app.get('/set-cookie',(req,res)=>{
+    res.cookie('name','zhangsan') // 会在浏览器关闭的时候销毁
+    res.cookie('name','lisi',{maxAge: 60 * 1000})
+})
+```
+
+##### 删除cookie：
+
+```js
+app.get('/set-cookie',(req,res)=>{
+    res.clearCookie('name') // 退出登录时删除
+})
+```
+
+##### 获取cookie：
+
+`npm i cookie-parser`
+
+```js
+const cookieParser = require('cookie-parser')
+app.use(cookieParser())
+
+// 获取cookie
+app.get('/get-cookie',(req,res)=>{
+    console.log(req.cookies)
+    res.send(`${req.cookies}`)
+})
+```
+
+### session:
+
+保存在服务器端的一块数据，保存当前访问用户的相关信息
+
+#### 作用：
+
+实现会话控制，可以识别用户身份，快速获取当前用户的相关信息
+
+#### 代码操作：
+
+express-session
+
+connect-mogo
+
+##### 设置：
+
+```js
+app.get('/login',(req,res)=>{
+    if(req.query.username === 'admin' && req.query.password === 'admin'){
+        // 设置 session 信息
+        req.session.username == 'admin'
+        req.session.uid = ''
+    }
+})
+```
+
+##### 获取：
+
+```js
+app.get('/cart',(req,res)=>{
+    if(req.session.username){
+        res.send('页面')
+    }else {
+        res.send('还没登录')
+    }
+})
+```
+
+##### 删除：
+
+```js
+app.get('/logout',(req,res)=>{
+    req.session.destroy(()=>{
+        res.send('退出')
+    })
+})
+```
+
+### session和cookie的区别：
+
+1. 存在位置
+   - cookie：浏览器端
+   - session：服务端
+2. 安全性
+   - cookie是以明文方式存放在客户端，安全性相对较低
+   - session存放于服务器中，安全性相对较好
+3. 网络传输量
+   - cookie设置内容过多会增大报文体积，会影响传输效率
+   - session数据存储在服务器，只通过cookie传递id，不影响传输效率
+4. 存储限制
+   - 浏览器限制单个cookie保存的数据不能超过4K，且单个域名下的存储量也有限制
+   - session数据存储在服务器中，没有这些限制
+
+### token：
+
+#### 介绍：
+
+服务端生成并返回给HTTP客户端的一串加密字符串，token 中保存着用户信息
+
+#### 作用：
+
+实现会话控制，可以识别用户身份，主要用于移动端APP
+
+#### 特点：
+
+- 服务端压力更小
+  - 数据存储在客户端
+- 相对更安全
+  - 数据加密
+  - 可以避免CSRF（跨站请求伪造）
+- 扩展性更强
+  - 服务间可以共享
+  - 增加服务节点更简单
+
+#### JWT（JSON Web Token）
+
+目前最流行的跨域认证解决方案，可用于基于token的身份验证，使token的生成与校验更规范
+
+`npm i jsonwebtoken`
+
+```js
+// 导入
+const jwt = require('jsonwebtoken')
+
+// 创建token
+let token = jwt.sign({
+    username:'aaa'
+},'tokenxxxxxxxx',{
+    expiresIn:60 // 单位：秒
+})
+
+let t = 'tokenxxxxxxxx'
+// 校验 token
+jwt.verify(t,'tokenxxxxxxxx',(err,data)=>{
+    if(err){
+        console.log('校验失败')
+        return
+    }
+    console.log(data)
+})
+```
+
