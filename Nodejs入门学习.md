@@ -2665,7 +2665,7 @@ mongoose.connection.on('close', () => {
 });
 ```
 
-### mongoose插入文档
+### 插入文档:
 
 ```js
 // 1.导入mongoose
@@ -2704,8 +2704,347 @@ mongoose.connection.on("close", () => {
 });
 ```
 
+### 字段类型：
 
+字符串：String
 
-## api
+数字：Number
+
+布尔值：Boolean
+
+数组：Array , [ ]
+
+日期：Date
+
+Buffer对象： Buffer
+
+任意类型：Mixed，需要使用mongoose.Schema.Types.Mixed指定
+
+对象ID：ObjectId，需要使用mongoose.Schema.Types.ObjectId指定  文档ID 外键  用于联合查询
+
+高精度数字：Decimal128，需要使用mongoose.Schema.Types.Decimal128指定
+
+### 字段值验证：
+
+必填项：required
+
+默认值：default
+
+枚举值：enum
+
+唯一值：unique
+
+### 删除文档：
+
+```js
+// 7.删除一条
+  BookModel.deleteOne({ name: "西游记" })
+    .then(() => {
+      console.log("文档删除成功");
+    })
+    .catch((err) => {
+      console.log("文档删除失败", err);
+    })
+    .finally(() => {
+      console.log("删除操作完成");
+    });
+// 8.删除多条
+  BookModel.deleteMany({is_hot: true})
+    .then(() => {
+      console.log("文档删除成功");
+    })
+    .catch((err) => {
+      console.log("文档删除失败", err);
+    })
+    .finally(() => {
+      console.log("删除操作完成");
+    });
+```
+
+### 更新文档：
+
+```js
+// 7.更新
+    // 7.1 更新单个文档
+    BookModel.updateOne(
+      { name: "红楼梦" }, // 查询条件
+      { $set: { price: 9.9 } } // 更新内容
+    )
+    .then((data) => {
+      console.log("文档更新成功",data);
+    })
+    .catch((err) => {
+      console.log("文档更新失败", err);
+    });
+    // 7.2 更新多个文档s
+    BookModel.updateMany(
+      { price: 19.9 }, // 查询条件
+      { $set: { is_hot: true } } // 更新内容
+    )
+    .then((data) => {
+      console.log("文档更新成功",data);
+    })
+    .catch((err) => {
+      console.log("文档更新失败", err);
+    });
+```
+
+### 读取文档：
+
+```js
+ // 7.读取
+  // 7.1 查询单个文档
+    BookModel.findOne({ name: "红楼梦" }) // 查询条件
+      .then((data) => {
+        console.log("查询成功", data);
+      })
+      .catch((err) => {
+        console.log("查询失败", err);
+      });
+  // 7.2 查询多个文档
+  BookModel.find({ price: 19.9 }) // 查询条件
+    .then((data) => {
+      console.log("查询成功", data);
+    })
+    .catch((err) => {
+      console.log("查询失败", err);
+    });
+```
+
+### 条件控制：
+
+- #### 运算符：在mongodb不能 >, <,  >=, <=, !== 等运算符，需要使用替代符号
+
+  - `>` 使用 `$gt`
+  - `<` 使用 `$lt`
+  - `>=` 使用 `$gte`
+  - `<=` 使用 `$lte`
+  - `!==` 使用 `$ne`
+
+  `db.students.find({id: {$gt:3}})` id号比3大的所有记录
+
+- #### 逻辑运算
+
+  - #### `$or`
+
+  `db.students.find({$or:[{age:18},{age:24}]})`
+
+  - #### `$and`
+
+  `db.students.find({$and:[{age:{$lt:20}},{age:{$gt:15}}]})`
+
+- #### 正则匹配
+
+条件中可以直接使用JS的正则语法，通过正则可以进行模糊查询
+
+`db.students.find({name: /imissyou/})`
+
+```js
+// 7.读取数据
+  // 查询条件 价格高于9.9
+    BookModel.find({ price: {$gt: 9.9} })
+      .then((data) => {
+        console.log("查询成功", data);
+      })
+      .catch((err) => {
+        console.log("查询失败", err);
+      });
+
+  // is_hot 为true并且价格高于9.9的书籍
+    BookModel.find({ is_hot: true, price: { $gt: 9.9 } })
+      .then((data) => {
+        console.log("查询成功", data);
+      })
+      .catch((err) => {
+        console.log("查询失败", err);
+      });
+  // 查询条件 名称包含"三国"的书籍
+  BookModel.find({ name: /三国/  })
+    .then((data) => {
+      console.log("查询成功", data);
+    })
+    .catch((err) => {
+      console.log("查询失败", err);
+    });
+```
+
+### 个性化读取：
+
+1. #### 字段筛选：
+
+   ```js
+     // 查询条件 设置字段 只查询name和author字段
+       BookModel.find()
+           .select({ name: 1, author: 1, _id: 0 })
+           .exec()
+         .then((data) => {
+           console.log("查询成功", data);
+         })
+         .catch((err) => {
+           console.log("查询失败", err);
+         });
+   ```
+
+2. #### 数据排序：
+
+   ```js
+    // 查询条件 排序 .sort() 正序：1 倒序：-1 
+        BookModel.find()
+            .select({ name: 1, price: 1, _id: 0 })
+            .sort({ price: 1 }) 
+            .exec()
+          .then((data) => {
+            console.log("查询成功", data);
+          })
+          .catch((err) => {
+            console.log("查询失败", err);
+          });
+   ```
+
+3. #### 数据截取：
+
+   ```js
+   // 查询条件 分页
+     BookModel.find()
+       .select({ name: 1, price: 1, _id: 0 }) // 选择查询数据条件
+       .sort({ price: -1 }) // 排序
+       .skip(2) // 跳过前几条数据
+       .limit(2) // 限制查询几条数据
+       .exec() // 执行查询
+       .then((data) => {
+         console.log("查询成功", data);
+       })
+       .catch((err) => {
+         console.log("查询失败", err);
+       });
+   ```
+
+### 代码模块化：
+
+```js
+config/config.js
+// 配置文件
+module.exports = {
+  DBHOST: "127.0.0.1",
+  DBPORT: "27017",
+  DBNAME: "test",
+};
+```
+
+```js
+db/db.js
+/**
+ * 
+ * @param {*} success 数据库连接成功的回调
+ * @param {*} error 数据库连接失败的回调
+ */
+module.exports = function (success, error) {
+  if (error !== "function") {
+    error = () => {
+      console.log("数据库连接失败");
+    };
+  }
+  // 导入mongoose
+  const mongoose = require("mongoose");
+
+  // 导配置文件
+  const { DBHOST, DBPORT, DBNAME } = require("../config/config.js");
+
+  // 设置strictQuery为true
+  // strictQuery: true 代表严格查询模式
+  // strictQuery: false 代表非严格查询模式
+  mongoose.set("strictQuery", true);
+
+  // 连接数据库
+  mongoose.connect(`mongodb://${DBHOST}:${DBPORT}/${DBNAME}`);
+
+  // 设置回调
+  mongoose.connection.once("open", () => {
+    success();
+  });
+
+  mongoose.connection.on("error", () => {
+    error();
+  });
+
+  mongoose.connection.on("close", () => {
+    console.log("数据库连接关闭");
+  });
+};
+```
+
+```js
+// 导入mongoose
+const mongoose = require("mongoose");
+
+// 创建文档结构对象
+const MovieSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    unique: true, // 唯一索引
+  }, // 必须字段
+  director: {
+    type: String,
+    default: "未知导演",
+  },
+  style: {
+    type: String,
+    enum: ["动作", "喜剧", "爱情", "科幻"], // 枚举类型
+  }
+});
+
+// 创建模型对象 对文档操作的封装对象 movies
+const MovieModel = mongoose.model("movie", MovieSchema);
+
+// 导出模型对象
+module.exports = MovieModel;
+```
+
+### 图形化工具：
+
+- Robo 3T
+- navicat
+
+## 接口（api，Application Program Interface）
+
+### 简介：
+
+前后端通信的桥梁
+
+### 作用：
+
+实现前后端通信
+
+### 组成：
+
+- 请求方法
+- 接口地址（URL）
+- 请求参数
+- 响应结果
+
+### RESTful API：
+
+一种特殊风格的接口
+
+#### 特点：
+
+- URL中的路径表示资源，路径中不能有动词，例如create，delete，update等
+- 操作资源要与HTTP请求方法对应
+- 操作结果要与HTTP响应状态对应
+
+### json-sever：
+
+js编写的工具包，用于启动临时的接口服务
+
+`npm i -g json-server`
+
+`json-server --watch db.json` 以JSON文件所在的文件夹作为工作目录，默认端口3000
+
+### 接口测试工具：
+
+- apipost
+- postman
+- apifox
 
 ## 会话控制
